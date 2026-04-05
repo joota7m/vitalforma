@@ -1,0 +1,11 @@
+{
+  "name": "vitalforma",
+  "version": "1.0.0",
+  "description": "1:1 clone of Salud en Foco",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "dependencies": {
+    "serve": "^14.2.0"
+  }
+}
