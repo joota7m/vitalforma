@@ -109,6 +109,15 @@
           const CHECKOUT_TIME = 240; // 4 minutos
           let timerStarted = false;
 
+          function showCheckoutBtn() {
+              if (timerStarted) return;
+              timerStarted = true;
+              const checkoutBtn = document.getElementById('checkout-btn-delayed');
+              if (checkoutBtn) {
+                  checkoutBtn.style.display = 'block';
+              }
+          }
+
           function positionElements() {
               const player = document.querySelector('vturb-smartplayer') || document.querySelector('[id^="vid-"]');
               const aviso = document.getElementById('aviso-pre-botao');
@@ -134,17 +143,32 @@
           // Executa periodicamente a checagem de posicionamento
           setInterval(positionElements, 500);
 
-          // Lógica de delay do Vturb
+          // Lógica de delay do Vturb (Método direto)
+          const delayInterval = setInterval(() => {
+              const player = document.querySelector('vturb-smartplayer') || document.querySelector('smart-video');
+              const time = player ? (player.currentTime || (player.video && player.video.currentTime) || 0) : 0;
+              if (time >= CHECKOUT_TIME) {
+                  showCheckoutBtn();
+                  clearInterval(delayInterval);
+              }
+          }, 1000);
+
+          // Fallback via _smartplayer
           window._smartplayer = window._smartplayer || [];
           window._smartplayer.push(['onTimeUpdate', (time) => {
-              if (time >= CHECKOUT_TIME && !timerStarted) {
-                  const checkoutBtn = document.getElementById('checkout-btn-delayed');
-                  if (checkoutBtn) {
-                      checkoutBtn.style.display = 'block';
-                      timerStarted = true;
-                  }
+              if (time >= CHECKOUT_TIME) {
+                  showCheckoutBtn();
+                  clearInterval(delayInterval);
               }
           }]);
+
+          // Fallback de tempo absoluto: garante que apareça após 4m20s do carregamento, 
+          // mesmo que a pessoa pause ou o script do Vturb falhe completamente.
+          setTimeout(() => {
+              showCheckoutBtn();
+              clearInterval(delayInterval);
+          }, 260000);
+
       })();
     </script>
   </body>
