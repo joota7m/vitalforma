@@ -55,6 +55,7 @@
     </noscript>
 
     <style>
+      /* Estilos para os elementos de conversão */
       #aviso-pre-botao {
         display: block;
         background-color: #1a1a1a;
@@ -83,12 +84,29 @@
         opacity: 1;
       }
 
-      #botao-sempre-visivel {
+      #botao-footer-wrapper {
+        display: none; /* Oculto inicialmente */
         max-width: 600px;
         margin: 20px auto;
         text-align: center;
         font-family: sans-serif;
         padding-bottom: 30px;
+      }
+
+      #header-checkout-btn-v2 {
+        display: none; /* Oculto inicialmente */
+        background-color: #CC0000;
+        color: white;
+        text-align: center;
+        padding: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+        text-decoration: none;
+        width: 100%;
+        font-family: sans-serif;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        animation: pulse 2s infinite;
       }
 
       .btn-checkout {
@@ -108,13 +126,13 @@
         box-shadow: 0 4px 15px rgba(204, 0, 0, 0.3);
       }
 
-      .visivel .btn-checkout {
+      .visivel .btn-checkout, #header-checkout-btn-v2 {
         animation: pulse 2s infinite;
       }
 
       @keyframes pulse {
         0%   { transform: scale(1); }
-        50%  { transform: scale(1.03); }
+        50%  { transform: scale(1.02); }
         100% { transform: scale(1); }
       }
 
@@ -166,14 +184,49 @@
         margin-top: 10px;
         font-weight: 500;
       }
+
+      .bonus-modified {
+        text-align: center;
+        padding: 40px 20px;
+        background: #fff;
+        border-radius: 12px;
+        margin: 20px 0;
+        border: 2px dashed #ccc;
+      }
+      
+      .bonus-modified h2 {
+          color: #CC0000;
+          font-size: 1.5rem;
+          margin-bottom: 15px;
+          text-transform: uppercase;
+      }
+      
+      .bonus-modified p {
+          color: #444;
+          font-size: 1.1rem;
+          line-height: 1.6;
+      }
+
+      .curiosity-text {
+        color: #666;
+        font-style: italic;
+        font-size: 0.85rem;
+        margin-bottom: 10px;
+        display: block;
+      }
     </style>
 
     <!-- Elementos Dinâmicos -->
+    <a href="https://go.centerpag.com/PPU38CQA1UG" id="header-checkout-btn-v2">
+        Acceder con descuento ahora
+    </a>
+
     <div id="aviso-pre-botao">
-        🔒 Mira el video hasta el final para desbloquear tu oferta especial con desconto exclusivo.
+        🔒 Mira el video hasta el final para desbloquear tu oferta especial con descuento exclusivo.
     </div>
 
     <div id="checkout-block">
+        <span class="curiosity-text">Descuento especial disponible solo después de desbloquear tu acceso</span>
         <a href="https://go.centerpag.com/PPU38CQA1UG" class="btn-checkout">
             ✅ ¡SÍ! QUIERO ALIVIAR MI DOLOR HOY — SOLO $11.97
         </a>
@@ -191,7 +244,8 @@
         </div>
     </div>
 
-    <div id="botao-sempre-visivel">
+    <div id="botao-footer-wrapper">
+        <span class="curiosity-text">Tu descuento exclusivo se activará al finalizar el tiempo de liberación</span>
         <a href="https://go.centerpag.com/PPU38CQA1UG" class="btn-checkout">
             🔒 QUIERO RECUPERAR MI MOVILIDAD — SOLO $11.97
         </a>
@@ -206,49 +260,74 @@
           const COUNTDOWN_MINUTES = 15;
           let timerStarted = false;
 
-          function injectElements() {
+          function findTargetSections() {
+              // 1. Barra ÚLTIMA HORA
+              const revolvingBar = Array.from(document.querySelectorAll('div, section')).find(el => 
+                 el.innerText.includes('ÚLTIMA HORA') && el.innerText.length < 500 && el.id !== 'header-checkout-btn-v2'
+              );
+
+              // 2. Seção de Bónus
+              const bonusSection = Array.from(document.querySelectorAll('h1, h2, h3, div, section')).find(el => 
+                 (el.innerText.toUpperCase().includes('RECIBE 3 BONOS') || el.innerText.toUpperCase().includes('BONOS EXCLUSIVOS')) && el.innerText.length < 500
+              );
+
+              return { revolvingBar, bonusSection };
+          }
+
+          function injectAndModify() {
+              const { revolvingBar, bonusSection } = findTargetSections();
               const player = document.querySelector('vturb-smartplayer') || document.querySelector('[id^="vid-"]');
               const aviso = document.getElementById('aviso-pre-botao');
               const checkout = document.getElementById('checkout-block');
-              const botaoSempre = document.getElementById('botao-sempre-visivel');
-              
-              let injectedTop = false;
-              let injectedBottom = false;
+              const footerWrapper = document.getElementById('botao-footer-wrapper');
+              const headerBtn = document.getElementById('header-checkout-btn-v2');
 
-              // 1. Injetar Aviso/Botão 1 abaixo do player
+              // A. Esconder qualquer botão de checkout original ANTES do tempo
+              if (!timerStarted) {
+                  const originalButtons = document.querySelectorAll('main a[href*="checkout"], #root a[href*="centerpag"]');
+                  originalButtons.forEach(btn => {
+                      if (btn.id !== 'header-checkout-btn-v2' && btn.className !== 'btn-checkout') {
+                          btn.style.display = 'none';
+                      }
+                  });
+              }
+
+              // B. Posicionar botão superior no topo
+              if (revolvingBar && headerBtn && !revolvingBar.dataset.hooked) {
+                  revolvingBar.parentNode.insertBefore(headerBtn, revolvingBar);
+                  revolvingBar.dataset.hooked = "true";
+              }
+
+              // C. Posicionar Aviso/Checkout abaixo do player
               if (player && aviso && checkout) {
                   const target = player.closest('.flex.justify-center') || player;
                   if (target.nextSibling !== aviso) {
                       target.parentNode.insertBefore(aviso, target.nextSibling);
                       aviso.parentNode.insertBefore(checkout, aviso.nextSibling);
                   }
-                  injectedTop = true;
               }
 
-              // 2. Injetar Botão 2 após depoimentos (fim da página ou após root)
-              if (botaoSempre) {
-                  const root = document.getElementById('root');
-                  if (root) {
-                      // Se houver algum elemento final dentro do root, tentamos colocar depois dele
-                      // Caso contrário, apenas garantimos que está no fim do body
-                      if (root.nextSibling !== botaoSempre) {
-                          root.parentNode.insertBefore(botaoSempre, root.nextSibling);
-                      }
-                      injectedBottom = true;
-                  }
+              // D. Posicionar Botão Footer no fim do body para garantir visibilidade
+              if (footerWrapper && document.body.lastChild !== footerWrapper) {
+                  document.body.appendChild(footerWrapper);
               }
 
-              return injectedTop && injectedBottom;
+              // E. Modificar Bónus
+              if (bonusSection && !bonusSection.dataset.modified) {
+                  // Achamos o container mais alto que contém apenas o bônus
+                  const targetEl = bonusSection.closest('section') || bonusSection;
+                  targetEl.innerHTML = `
+                    <div class="bonus-modified">
+                        <h2>Accede hoy y desbloquea beneficios exclusivos</h2>
+                        <p>Tu acceso incluye contenido especial y ventajas exclusivas que serán reveladas en el momento correcto, después de ver la presentación.</p>
+                    </div>
+                  `;
+                  targetEl.dataset.modified = "true";
+              }
           }
 
-          // Tentativa periódica de injeção
-          const injectionInterval = setInterval(() => {
-              if (injectElements()) {
-                  // Continuamos monitorando caso o React remonte o DOM
-              }
-          }, 1000);
+          setInterval(injectAndModify, 1000);
 
-          // VSL Listener - Vturb
           window._smartplayer = window._smartplayer || [];
           window._smartplayer.push(['onTimeUpdate', (time) => {
               if (time >= CHECKOUT_TIME && !timerStarted) {
@@ -259,21 +338,30 @@
           function showCheckout() {
               if (timerStarted) return;
               timerStarted = true;
+
+              const { revolvingBar } = findTargetSections();
+              if (revolvingBar) revolvingBar.style.display = 'none';
+              document.getElementById('header-checkout-btn-v2').style.display = 'block';
+
               document.getElementById('checkout-block').classList.add('visivel');
               document.getElementById('aviso-pre-botao').style.display = 'none';
+              document.getElementById('botao-footer-wrapper').style.display = 'block';
+
+              // Revelar botões originais ocultos
+              const originalButtons = document.querySelectorAll('main a[href*="checkout"], #root a[href*="centerpag"]');
+              originalButtons.forEach(btn => btn.style.display = 'block');
+
               startCountdown();
           }
 
           function startCountdown() {
               let time = COUNTDOWN_MINUTES * 60;
               const display = document.getElementById('timer');
-              
               const countdownInterval = setInterval(() => {
                   let minutes = Math.floor(time / 60);
                   let seconds = time % 60;
                   seconds = seconds < 10 ? '0' + seconds : seconds;
                   display.innerHTML = `⏰ Esta oferta expira en: ${minutes}:${seconds}`;
-                  
                   if (--time < 0) {
                       clearInterval(countdownInterval);
                       display.innerHTML = "⏰ Esta oferta ha expirado";
@@ -281,9 +369,7 @@
               }, 1000);
           }
       })();
-    </script>}
-      })();
     </script>
+
   </body>
 </html>
-<!-- Deploy trigger: 2026-04-06 14:10 -->
