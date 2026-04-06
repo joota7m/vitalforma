@@ -65,6 +65,7 @@
         margin: 20px auto;
         max-width: 800px;
         font-family: sans-serif;
+        font-size: 0.9rem;
       }
 
       #checkout-block {
@@ -82,6 +83,14 @@
         opacity: 1;
       }
 
+      #botao-sempre-visivel {
+        max-width: 600px;
+        margin: 20px auto;
+        text-align: center;
+        font-family: sans-serif;
+        padding-bottom: 30px;
+      }
+
       .btn-checkout {
         background-color: #CC0000;
         color: white;
@@ -96,9 +105,10 @@
         text-decoration: none;
         display: block;
         margin-bottom: 10px;
+        box-shadow: 0 4px 15px rgba(204, 0, 0, 0.3);
       }
 
-      #checkout-block.visivel .btn-checkout {
+      .visivel .btn-checkout {
         animation: pulse 2s infinite;
       }
 
@@ -119,9 +129,10 @@
       }
 
       .price-new {
-        font-size: 2rem;
+        font-size: 2.2rem;
         font-weight: bold;
         color: #000;
+        margin: 0 10px;
       }
 
       .discount-badge {
@@ -131,32 +142,35 @@
         padding: 4px 8px;
         border-radius: 4px;
         font-size: 0.9rem;
-        margin-left: 10px;
+        vertical-align: middle;
       }
 
       .countdown {
         font-size: 1.1rem;
         font-weight: bold;
         margin: 15px 0;
-        color: #333;
+        color: #d00;
       }
 
       .guarantee {
-        font-size: 0.85rem;
-        color: #666;
+        font-size: 0.9rem;
+        color: #444;
         margin: 15px 0;
-        line-height: 1.4;
+        line-height: 1.5;
+        font-weight: 500;
       }
 
       .subtext {
-        font-size: 0.8rem;
-        color: #888;
-        margin-top: 5px;
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 10px;
+        font-weight: 500;
       }
     </style>
 
+    <!-- Elementos Dinâmicos -->
     <div id="aviso-pre-botao">
-        🔒 Mira el video hasta el final para desbloquear tu oferta especial con descuento exclusivo.
+        🔒 Mira el video hasta el final para desbloquear tu oferta especial con desconto exclusivo.
     </div>
 
     <div id="checkout-block">
@@ -172,11 +186,13 @@
             ⏰ Esta oferta expira en: 15:00
         </div>
         <div class="guarantee">
-            🛡️ Garantía incondicional de 30 días.<br>
-            Si no eliminas tu dolor, te devolvemos el 100% de tu dinero.<br>
-            Sin preguntas. Sin burocracia.
+            🛡️ Garantía de 30 días.<br>
+            Si no eliminas tu dolor, te devolvemos el 100%.
         </div>
-        <a href="https://go.centerpag.com/PPU38CQA1UG" class="btn-checkout" style="font-size: 1.1rem;">
+    </div>
+
+    <div id="botao-sempre-visivel">
+        <a href="https://go.centerpag.com/PPU38CQA1UG" class="btn-checkout">
             🔒 QUIERO RECUPERAR MI MOVILIDAD — SOLO $11.97
         </a>
         <div class="subtext">
@@ -186,48 +202,59 @@
 
     <script>
       (function() {
-          const CHECKOUT_TIME = 240; // 4 minutes
+          const CHECKOUT_TIME = 240; // 4 minutos
           const COUNTDOWN_MINUTES = 15;
           let timerStarted = false;
 
-          // 1. Move elements after player
           function injectElements() {
               const player = document.querySelector('vturb-smartplayer') || document.querySelector('[id^="vid-"]');
               const aviso = document.getElementById('aviso-pre-botao');
               const checkout = document.getElementById('checkout-block');
+              const botaoSempre = document.getElementById('botao-sempre-visivel');
               
+              let injectedTop = false;
+              let injectedBottom = false;
+
+              // 1. Injetar Aviso/Botão 1 abaixo do player
               if (player && aviso && checkout) {
-                  // Find the container of the player if it's nested
                   const target = player.closest('.flex.justify-center') || player;
-                  target.parentNode.insertBefore(aviso, target.nextSibling);
-                  aviso.parentNode.insertBefore(checkout, aviso.nextSibling);
-                  return true;
+                  if (target.nextSibling !== aviso) {
+                      target.parentNode.insertBefore(aviso, target.nextSibling);
+                      aviso.parentNode.insertBefore(checkout, aviso.nextSibling);
+                  }
+                  injectedTop = true;
               }
-              return false;
+
+              // 2. Injetar Botão 2 após depoimentos (fim da página ou após root)
+              if (botaoSempre) {
+                  const root = document.getElementById('root');
+                  if (root) {
+                      // Se houver algum elemento final dentro do root, tentamos colocar depois dele
+                      // Caso contrário, apenas garantimos que está no fim do body
+                      if (root.nextSibling !== botaoSempre) {
+                          root.parentNode.insertBefore(botaoSempre, root.nextSibling);
+                      }
+                      injectedBottom = true;
+                  }
+              }
+
+              return injectedTop && injectedBottom;
           }
 
-          // Attempt injection periodically until player is loaded
+          // Tentativa periódica de injeção
           const injectionInterval = setInterval(() => {
-              if (injectElements()) clearInterval(injectionInterval);
-          }, 500);
+              if (injectElements()) {
+                  // Continuamos monitorando caso o React remonte o DOM
+              }
+          }, 1000);
 
-          // 2. VSL Listener - Vturb specific
+          // VSL Listener - Vturb
           window._smartplayer = window._smartplayer || [];
           window._smartplayer.push(['onTimeUpdate', (time) => {
               if (time >= CHECKOUT_TIME && !timerStarted) {
                   showCheckout();
               }
           }]);
-
-          // Fallback for Vturb iframe API
-          window.addEventListener('message', function(event) {
-              try {
-                  const data = JSON.parse(event.data);
-                  if (data.name === 'onTimeUpdate' && data.time >= CHECKOUT_TIME && !timerStarted) {
-                      showCheckout();
-                  }
-              } catch (e) {}
-          });
 
           function showCheckout() {
               if (timerStarted) return;
@@ -237,7 +264,6 @@
               startCountdown();
           }
 
-          // 3. Countdown
           function startCountdown() {
               let time = COUNTDOWN_MINUTES * 60;
               const display = document.getElementById('timer');
@@ -254,6 +280,8 @@
                   }
               }, 1000);
           }
+      })();
+    </script>}
       })();
     </script>
   </body>
